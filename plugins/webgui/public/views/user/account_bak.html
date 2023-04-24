@@ -1,0 +1,240 @@
+<style type="text/css">
+p.tip {
+	border-bottom-right-radius: 2px;
+	border-left: 4px solid #f66;
+	border-top-right-radius: 2px;
+	margin: 2em 0;
+	padding: 12px 24px 12px 30px;
+	position: relative;
+}
+</style>
+<div layout="row" layout-xs="column" layout-wrap>
+    <div flex="100" ng-if="account && !account.length">
+        <md-card>
+            <md-card-content>
+                <div style="margin-top: 20px;margin-bottom: 30px;"><strong>普通套餐：</strong><font color=Blue>美国+日本节点</font> 60G/每30天</div>
+                <div style="margin-bottom: 30px;"><strong>高端套餐：</strong><font color=Blue>+新加坡+香港节点</font> 60G/每30天</div>
+                <div style="margin-bottom: 30px;"><strong>娱乐套餐：</strong><font color=Blue>+高端+韩国节点</font> 60G/每30天</div>                
+                <div ng-show="config.alipay || config.paypal || config.giftcard" ng-click="createOrder()" style="margin-bottom: 30px;">该用户未分配端口，请<span><md-button class="md-primary">{{ '点击这里' | translate }}</md-button><font color=DarkRed>选套餐续费！</font></span></div>
+                <div style="margin-bottom: 30px;">未分配端口的用户<font color=DarkRed>请先续费</font>，其他问题请联系客服</div>
+                <div style="margin-bottom: 30px;"><font color=DarkRed><strong>注意：</strong>香港节点用1g算1.5g，韩国节点用1g算2g！</font></div>
+            </md-card-content>
+        </md-card>
+    </div>
+    <div flex="100" flex-gt-md="{{flexGtSm}}" ng-repeat="a in account track by a.id">
+        <md-card ng-click="toAccount(a.id)" style="position: relative;">
+            <div style="position: absolute; background: rgba(255, 255, 255, 0.75); width: 100%; height: 100%; z-index: 1;" ng-if="a.active === 0">
+                <div style="width: 100%; height: 100%;" layout="row" layout-align="center center">
+                    <md-button class="md-raised md-warn" ng-click="activeAccount(a)"><span style="font-size: 1.5em; margin: 10px;">激活账号</span></md-button>
+                </div>
+            </div>
+            <!--md-card-header ng-style="isBlur(a)">
+                <md-card-header-text>
+                    <span class="md-title">{{a.port}}
+                        <span ng-show="isAccountOutOfDate(a)" style="color: #a33;">&nbsp;{{ '已过期' | translate }}</span>
+                    </span>
+                </md-card-header-text>
+            </md-card-header-->
+            <md-card-content ng-style="isBlur(a)">
+                <md-tabs md-selected="a.defaultTab" md-border-bottom md-autoselect md-dynamic-height>
+                    <md-tab ng-repeat="server in a.serverList track by server.id" label="{{server.name}}" md-on-select="getServerPortData(a, server.id)">
+                    </md-tab>
+                </md-tabs>
+                <div layout="row" layout-align="center center" layout-wrap>
+                    <div flex="60" flex-xs="100">
+                        <md-list>
+                            <md-list-item ng-hide="config.simple">
+                                <div flex layout="row" layout-align="space-between center">
+                                    <div flex="40" translate>地址：</div>
+                                    <div flex="60" style="text-align:right">{{a.serverInfo.host}}</div>
+                                </div>
+                            </md-list-item>
+                            <md-divider ng-hide="config.simple"></md-divider>
+                            <md-list-item ng-hide="config.simple">
+                                <div flex layout="row" layout-align="space-between center">
+                                    <div flex="40" translate>端口：</div>
+                                    <div flex="60" style="text-align:right">{{a.port}} <a href="https://tcp.ping.pe/{{a.serverInfo.host}}:{{a.port}}" target="_blank"><span style="font-size: 0.9em;">端口测试</span></a></div>
+                                </div>
+                            </md-list-item>
+                            <md-divider ng-hide="config.simple"></md-divider>
+                            <md-list-item ng-hide="isWG(a.serverInfo) || config.simple">
+                                <div flex layout="row" layout-align="space-between center">
+                                    <div flex="40">SS密码：</div>
+                                    <div flex="60" style="text-align:right">{{a.password}}</div>
+                                </div>
+                            </md-list-item>
+                            <md-divider ng-hide="isWG(a.serverInfo) || config.simple"></md-divider>
+                            <md-list-item ng-hide="isWG(a.serverInfo) || config.simple">
+                                <div flex layout="row" layout-align="space-between center">
+                                    <div flex="40">{{ '加密方式：' | translate }}</div>
+                                    <div flex="60" style="text-align:right">{{a.serverInfo.method}}</div>
+                                </div>
+                            </md-list-item>
+                            <md-divider ng-hide="isWG(a.serverInfo) || config.simple"></md-divider>
+                            <md-list-item ng-show="isWG(a.serverInfo) && !config.simple">
+                                <div flex layout="row" layout-align="space-between center">
+                                    <div flex="40" translate>公钥：</div>
+                                    <div flex="60" style="text-align:right; overflow: hidden; text-overflow: ellipsis; color: #666; font-size: 0.8em;">{{a.publicKey}}</div>
+                                </div>
+                            </md-list-item>
+                            <md-divider ng-show="isWG(a.serverInfo) && !config.simple"></md-divider>
+                            <md-list-item ng-show="isWG(a.serverInfo) && !config.simple">
+                                <div flex layout="row" layout-align="space-between center">
+                                    <div flex="40">{{ '私钥：' | translate }}</div>
+                                    <div flex="60" style="text-align:right; overflow: hidden; text-overflow: ellipsis; color: #666; font-size: 0.8em;">{{a.privateKey}}</div>
+                                </div>
+                            </md-list-item>
+                            <md-divider ng-show="isWG(a.serverInfo) && !config.simple"></md-divider>
+                            <md-list-item>
+                                <div flex layout="row" layout-align="space-between center">
+                                    <div flex="40">{{ '流量统计：'| translate }}</div>
+                                    <div flex="60" style="text-align:right">
+                                        <span ng-if="a.type === 1">{{ '不限量' | translate }}</span>
+                                        <span style="font-size: 0.9em;" ng-if="a.type >=2 && a.type <= 5">
+                                            <span ng-style="a.isFlowOutOfLimit[a.serverInfo.id] ? {color: '#a33'} : {color: '#333'}">已用 {{ a.serverPortFlow | flow }}</span>/总量 {{ a.data.flow + a.data.flowPack | flow }}</span><span style="font-size: 0.9em;" ng-show="a.isFlowOutOfLimit[a.serverInfo.id]">&nbsp;<a href="https://www.sop.pw/files/reset.php?port={{a.port}}&pwd={{a.password}}">重置流量</a></span><br />
+                                            <span style="font-size: 0.9em;">清零时间 {{a.data.to | date : 'yyyy-MM-dd HH:mm'}}</span>
+                                    </div>
+                                </div>
+                            </md-list-item>
+                            <md-divider></md-divider>
+                            <!--md-list-item>
+                                <div flex layout="row" layout-align="space-between center">
+                                    <div flex="40">{{ '流量倍率：' | translate }}</div>
+                                    <div flex="60" style="text-align:right">{{ a.serverInfo.scale }}</div>
+                                </div>
+                            </md-list-item>
+                            <md-divider></md-divider>
+                            <md-list-item ng-style="cycleStyle(a)">
+                                <div flex layout="row" layout-align="space-between center">
+                                    <div flex="40">{{ '周期：' | translate }}</div>
+                                    <div flex="60" style="text-align:right">
+                                        <span ng-if="a.type === 1">{{ '无' | translate }}</span>
+                                        <span ng-if="a.type >=2 && a.type <= 5"><span style="font-size: 0.9em;">{{a.data.from | date : 'yyyy-MM-dd HH:mm'}}</span><br><span style="font-size: 0.9em;">{{a.data.to | date : 'yyyy-MM-dd HH:mm'}}</span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </md-list-item>
+                            <md-divider></md-divider-->
+                            <md-list-item>
+                                <div flex layout="row" layout-align="space-between center">
+                                    <div flex="40" translate>到期时间：</div>
+                                    <div flex="60" style="text-align:right">
+                                        <span ng-if="a.type === 1" translate>不限时</span>
+                                        <span ng-if="a.type >=2 && a.type <= 5">
+                                            <span style="font-size: 0.9em;">{{ a.data.expire | date : 'yyyy-MM-dd HH:mm' }}</span><br><span style="font-size: 0.9em;" ng-style="fontColor(a)"> {{ a.data.expire | timeago | translateTime }}</span><span ng-show="isAccountOutOfDate(a)" style="color: #a33;">&nbsp;{{ '已过期' | translate }}</span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </md-list-item>
+                            <md-divider></md-divider>
+                            <!--md-list-item>
+                                <div flex layout="row" layout-align="space-between center">
+                                    <div flex="40" translate>最近连接：</div>
+                                    <div flex="60" style="text-align:right">
+                                        <span ng-if="a.lastConnect" style="font-size: 0.9em;">{{a.lastConnect | date : 'yyyy-MM-dd HH:mm'}}<span><br><span ng-if="a.lastConnect" style="font-size: 0.9em;">{{ a.lastConnect | timeago | translateTime }}</span>
+                                    </div>
+                                </div>
+                            </md-list-item>
+                            <md-divider></md-divider-->
+                            <md-list-item>
+                                <div flex layout="row" layout-align="space-between center">
+                                    <div flex="40">混淆插件：</div>
+				    <div ng-if="a.serverInfo.comment != 'tls' && a.serverInfo.comment != 'http'" flex="60" style="text-align:right;">none</div>
+				    <div ng-if="a.serverInfo.comment == 'tls' || a.serverInfo.comment == 'http'" flex="60" style="text-align:right;font-size: 0.9em;">插件 <strong>obfs-local</strong><br />插件选项 <strong>obfs={{ a.serverInfo.comment }}</strong></div>
+                                </div>
+                            </md-list-item>
+                            <md-divider></md-divider >
+			    <div layout="column" hide-xs hide-sm>  <!--电脑显示-->
+                            <md-list-item ng-if=" os == 'Linux'" >
+                                <div flex layout="row" layout-align="space-between center">
+                                    <div flex="40" style="font-size: 0.9em;" translate>Linux命令：</div>
+				    <div ng-if="a.serverInfo.comment != 'tls' && a.serverInfo.comment != 'http'" flex="60" style="text-align:right;"><button ngclipboard data-clipboard-text='ss-local -s {{a.serverInfo.host}} -p {{a.port}} -k {{a.password}} -m {{a.serverInfo.method}} -l 1080' ngclipboard-success="clipboardSuccess(e);">{{ "复制命令" }}</button></div>
+				    <div ng-if="a.serverInfo.comment == 'tls' || a.serverInfo.comment == 'http'" flex="60" style="text-align:right;"><button ngclipboard data-clipboard-text='ss-local -s {{a.serverInfo.host}} -p {{a.port}} -k {{a.password}} -m {{a.serverInfo.method}} -l 1080 --plugin obfs-local --plugin-opts "obfs={{ a.serverInfo.comment }};obfs-host=www.apple.com"' ngclipboard-success="clipboardSuccess(e);">{{ "复制命令" }}</button></div>
+                                </div>
+                            </md-list-item>
+                            <md-divider></md-divider>
+			    </div>
+                        </md-list>
+                    </div>
+                    <div flex flex-xs="100" layout="row" layout-align-xs="center center" layout-align-gt-xs="space-between center" ng-hide="config.simple" ng-if="a.defaultTab >= 0">
+                        <div hide-xs></div>
+                        <div ng-hide="isWG(a.serverInfo)" layout="column" layout-align-xs="center center" style="background-color: #eee;">
+                            <qr ng-if="a.serverInfo" ng-click="showQrcodeDialog(a.serverInfo, a)" size="getQrCodeSize()"
+                            layout-margin text="createQrCode(a.serverInfo, a)"
+                            image="true"></qr>
+                            <md-button class="md-primary" ngclipboard data-clipboard-text="{{ createQrCode(a.serverInfo, a) }}" ngclipboard-success="clipboardSuccess(e);">{{ '复制二维码链接' | translate }}</md-button>
+                        </div>
+                        <div ng-show="isWG(a.serverInfo)" ng-click="showWireGuard(a.serverInfo, a)" layout="column" layout-align-xs="center center" style="background-color: #eee;">
+                            <qr size="getQrCodeSize()" layout-margin text="createQrCode(a.serverInfo, a)" image="true"></qr>
+                            <md-button class="md-primary">显示WireGuard配置</md-button>
+                        </div>
+                        <div hide-xs></div>
+                    </div>
+                </div>
+                <!--md-button class="md-primary" ng-click="showChangePasswordDialog(a.id, a.password)">{{ '改SS密码' | translate }}</md-button>
+		<md-button class="md-primary">{{ '改SS密码' | translate }}</md-button-->
+                <md-button class="md-primary" ng-show="config.alipay || config.paypal || config.giftcard" ng-if="a.type >= 2 && a.type <= 5" ng-click="createOrder(a)">{{ '我要续费' | translate }}</md-button>
+                <md-button class="md-primary" ng-click="subscribe(a.id)" ng-if="config.subscribe">{{ '订阅链接' | translate }}</md-button>
+            </md-card-content>
+        </md-card>
+
+	<div layout="column" hide-xs hide-sm>  <!--电脑显示-->
+        <md-card>
+	    </md-card-content>
+	    <p>&nbsp;&nbsp;&nbsp;&nbsp;教程地址：<a href="https://www.sop.pw/#/home" target="_blank">www.sop.pw</a> [<a href="https://stuvn.github.io/link" target="_blank">备用</a>]</p>
+	    <md-divider></md-divider>
+	    <p>&nbsp;&nbsp;&nbsp;&nbsp;美区账号：<a href="https://www.sop.pw/#/ios" target="_blank">www.sop.pw/#/ios</a></p>
+	    </md-card-content>
+        </md-card>
+        </div>
+
+	<div layout="column" hide-gt-sm>  <!--手机显示-->
+	<p>&nbsp;&nbsp;<font color=DarkRed>手机教程看下面，</font>电脑教程及常见问题请看 <a href="https://www.sop.pw/#/home" target="_blank">sop.pw</a></p>
+        <md-card>
+            <md-card-content>  
+
+              <md-tabs md-border-bottom md-dynamic-height>
+
+                <md-tab id="android">
+                <md-tab-label><img src="libs/android/android.png" />&nbsp;&nbsp;Android 手机</md-tab-label>
+                <md-tab-body>
+	        	<p><font size=4>ⓘ</font> 点击下载 <a href="libs/android/sb.apk" target="_blank">Surfboard</a> 或 <a href="libs/android/cfa.apk" target="_blank">Clash</a> [<font color=DarkRed>二选一</font>]</p>
+	        	<p><font size=4>ⓘ</font> 安装后，请为App设置<font color=DarkRed>"后台运行"</font>权限！</p>
+	        	<p>一、登入您购买<font color=DarkRed>"SS节点"</font>的网站，复制<font color=DarkRed>"二维码链接"</font> [每个节点都对应一个<font color=DarkRed>"二维码链接"</font>]</p>
+	        	<p><img width="320" src="libs/android/sb_1.jpg" alt="" /></p>
+	        	<p>二、打开<font color=DarkRed>"冲浪板"</font>，添加节点。点击 <font color=DarkRed>📁</font>--><font color=DarkRed>从URL导入</font> [<font color=DarkRed>"重复操作"</font>添加其他节点到App]</p>
+	        	<p><img width="320" src="libs/android/sb_2.jpg" alt="" /></p>
+	        	<p>三、<font color=DarkRed>"另种方法"</font>添加节点：点击<font color=DarkRed>"SS节点"</font>的二维码[点两次]-->检测到<font color=DarkRed>"SS链接"</font>--><font color=DarkRed>"打开"</font></p>
+	        	<p><img width="320" src="libs/android/sb_3.jpg" alt="" /></p>
+	        	<p>四、点击<font color=DarkRed>"冲浪板"</font>左下角的<font color=DarkRed>"仪表盘"</font>图标，再点击<font color=DarkRed>"右侧"</font>的<font color=DarkRed>▶</font>按钮--><font color=DarkRed>"连接/断开"</font>节点</p>
+	        	<p><img width="320" src="libs/android/sb_4.jpg" alt="" /></p>
+                </md-tab-body>
+                </md-tab>
+
+                <md-tab id="ios">
+                <md-tab-label><img src="libs/apple/apple.png" />&nbsp;&nbsp;iPhone/iPad</md-tab-label>
+                <md-tab-body> 
+			<p><font size=4>ⓘ</font> 打开<font color=DarkRed>"App Store"</font>-->点<font color=DarkRed>"右上角头像"</font>--><font color=DarkRed>下拉到底部</font>--><font color=DarkRed>退出登录</font>，再登录<font color=DarkRed>"美区账号"</font><a href="javascript:getid(0);">点击查看账号</a></p>
+			<div style="color:Blue" id="jsonTip"></div>
+			<p><font size=4>ⓘ</font> 登陆时有安全提示，点<font color=DarkRed>"其他选项"</font>--><font color=DarkRed>"不升级"</font>，否则会弹出安全问题！[<font color=DarkRed>登录后下载</font> <a href="https://apps.apple.com/us/app/shadowrocket/id932747118" target="_blank">Shadowrocket</a>]</p>						
+			<p><img width="320" src="https://www.sop.pw/media/apple/id.jpg" alt="" /></p>
+			<p class="tip">下载完App后，请退出<font color=DarkRed>"美区账号"</font>，以避免各种<font color=DarkRed>"潜在的安全问题"</font></p>
+			<p>一、登入您购买<font color=DarkRed>"SS节点"</font>的网站，复制<font color=DarkRed>"二维码链接"</font> [每个节点都对应一个<font color=DarkRed>"二维码链接"</font>]</p>
+			<p><img width="320" src="libs/apple/sr_1.jpg" alt="" /></p>
+			<p>二、打开小火箭-->自动检测到<font color=DarkRed>"SS链接"</font>-->点击<font color=DarkRed>"添加"</font> [<font color=DarkRed>"重复操作"</font>添加其他节点到App]</p>
+			<p><img width="320" src="libs/apple/sr_2.jpg" alt="" /></p>
+			<p>三、<font color=DarkRed>"另种方法"</font>添加节点：点击<font color=DarkRed>"SS节点"</font>的二维码 [点两次]-->检测到<font color=DarkRed>"SS链接"</font>--><font color=DarkRed>"打开"</font></p>
+			<p><img width="320" src="libs/apple/sr_3.jpg" alt="" /></p>
+			<p>四、<font color=DarkRed>"选择节点"</font>--><font color=DarkRed>"连接/断开"</font> 首次使用会提示添加代理-->点击<font color=DarkRed>"Allow"</font>允许VPN连接！</p>
+			<p><img width="320" src="libs/apple/sr_4.jpg" alt="" /></p>
+                </md-tab-body>
+                </md-tab>
+
+              </md-tabs>  
+      
+            </md-card-content>
+        </md-card>
+	</div>
+
+    </div>
+</div>

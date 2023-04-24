@@ -1,0 +1,271 @@
+<style type="text/css">
+p.tip {
+	border-bottom-right-radius: 2px;
+	border-left: 4px solid #f66;
+	border-top-right-radius: 2px;
+	margin: 2em 0;
+	padding: 12px 24px 12px 30px;
+	position: relative;
+}
+</style>
+<div layout="row" layout-xs="column" layout-wrap>
+    <div flex="100" ng-if="account && !account.length">
+        <md-card>
+            <md-card-content>
+                <div style="margin-top: 20px;margin-bottom: 30px;"><strong>普通套餐：</strong><font color=Blue>美国+日本节点</font> 60G/每30天</div>
+                <div style="margin-bottom: 30px;"><strong>高端套餐：</strong><font color=Blue>+新加坡+香港节点</font> 60G/每30天</div>
+                <div style="margin-bottom: 30px;"><strong>娱乐套餐：</strong><font color=Blue>+高端+韩国节点</font> 60G/每30天</div>                
+                <div ng-show="config.alipay || config.paypal || config.giftcard" ng-click="createOrder()" style="margin-bottom: 30px;">该用户未分配端口，请<span><md-button class="md-primary">{{ '点击这里' | translate }}</md-button><font color=DarkRed>选套餐续费！</font></span></div>
+                <div style="margin-bottom: 30px;">未分配端口的用户<font color=DarkRed>请先续费</font>，其他问题请联系客服</div>
+                <div style="margin-bottom: 30px;"><font color=DarkRed><strong>注意：</strong>香港节点用1g算1.5g，韩国节点用1g算2g！</font></div>
+            </md-card-content>
+        </md-card>
+    </div>
+    <div flex="100" flex-gt-md="{{flexGtSm}}" ng-repeat="a in account track by a.id">
+        <md-card ng-click="toAccount(a.id)" style="position: relative;">
+            <div style="position: absolute; background: rgba(255, 255, 255, 0.75); width: 100%; height: 100%; z-index: 1;" ng-if="a.active === 0">
+                <div style="width: 100%; height: 100%;" layout="row" layout-align="center center">
+                    <md-button class="md-raised md-warn" ng-click="activeAccount(a)"><span style="font-size: 1.5em; margin: 10px;">激活账号</span></md-button>
+                </div>
+            </div>
+            <!--md-card-header ng-style="isBlur(a)">
+                <md-card-header-text>
+                    <span class="md-title">{{a.port}}
+                        <span ng-show="isAccountOutOfDate(a)" style="color: #a33;">&nbsp;{{ '已过期' | translate }}</span>
+                    </span>
+                </md-card-header-text>
+            </md-card-header-->
+            <md-card-content ng-style="isBlur(a)">
+                <md-tabs md-selected="a.defaultTab" md-border-bottom md-autoselect md-dynamic-height>
+                    <md-tab ng-repeat="server in a.serverList track by server.id" label="{{server.name}}" md-on-select="getServerPortData(a, server.id)">
+                    </md-tab>
+                </md-tabs>
+                <div layout="row" layout-align="center center" layout-wrap>
+                    <div flex="60" flex-xs="100">
+                        <md-list>
+                            <md-list-item ng-hide="config.simple">
+                                <div flex layout="row" layout-align="space-between center">
+                                    <div flex="40" translate>地址：</div>
+                                    <div flex="60" style="text-align:right">{{a.serverInfo.host}}</div>
+                                </div>
+                            </md-list-item>
+                            <md-divider ng-hide="config.simple"></md-divider>
+                            <md-list-item ng-hide="config.simple">
+                                <div flex layout="row" layout-align="space-between center">
+                                    <div flex="40" translate>端口：</div>
+                                    <div flex="60" style="text-align:right">{{a.port}} <a href="https://tcp.ping.pe/{{a.serverInfo.host}}:{{a.port}}" target="_blank"><span style="font-size: 0.9em;">端口测试</span></a></div>
+                                </div>
+                            </md-list-item>
+                            <md-divider ng-hide="config.simple"></md-divider>
+                            <md-list-item ng-hide="isWG(a.serverInfo) || config.simple">
+                                <div flex layout="row" layout-align="space-between center">
+                                    <div flex="40">SS密码：</div>
+                                    <div flex="60" style="text-align:right">{{a.password}}</div>
+                                </div>
+                            </md-list-item>
+                            <md-divider ng-hide="isWG(a.serverInfo) || config.simple"></md-divider>
+                            <md-list-item ng-hide="isWG(a.serverInfo) || config.simple">
+                                <div flex layout="row" layout-align="space-between center">
+                                    <div flex="40">{{ '加密方式：' | translate }}</div>
+                                    <div flex="60" style="text-align:right">{{a.serverInfo.method}}</div>
+                                </div>
+                            </md-list-item>
+                            <md-divider ng-hide="isWG(a.serverInfo) || config.simple"></md-divider>
+                            <md-list-item ng-show="isWG(a.serverInfo) && !config.simple">
+                                <div flex layout="row" layout-align="space-between center">
+                                    <div flex="40" translate>公钥：</div>
+                                    <div flex="60" style="text-align:right; overflow: hidden; text-overflow: ellipsis; color: #666; font-size: 0.8em;">{{a.publicKey}}</div>
+                                </div>
+                            </md-list-item>
+                            <md-divider ng-show="isWG(a.serverInfo) && !config.simple"></md-divider>
+                            <md-list-item ng-show="isWG(a.serverInfo) && !config.simple">
+                                <div flex layout="row" layout-align="space-between center">
+                                    <div flex="40">{{ '私钥：' | translate }}</div>
+                                    <div flex="60" style="text-align:right; overflow: hidden; text-overflow: ellipsis; color: #666; font-size: 0.8em;">{{a.privateKey}}</div>
+                                </div>
+                            </md-list-item>
+                            <md-divider ng-show="isWG(a.serverInfo) && !config.simple"></md-divider>
+                            <md-list-item>
+                                <div flex layout="row" layout-align="space-between center">
+                                    <div flex="40">{{ '流量统计：'| translate }}</div>
+                                    <div flex="60" style="text-align:right">
+                                        <span ng-if="a.type === 1">{{ '不限量' | translate }}</span>
+                                        <span style="font-size: 0.9em;" ng-if="a.type >=2 && a.type <= 5">
+                                            <span ng-style="a.isFlowOutOfLimit[a.serverInfo.id] ? {color: '#a33'} : {color: '#333'}">已用 {{ a.serverPortFlow | flow }}</span>/总量 {{ a.data.flow + a.data.flowPack | flow }}</span><span style="font-size: 0.9em;" ng-show="a.isFlowOutOfLimit[a.serverInfo.id]">&nbsp;<a href="https://www.wkao.in/files/reset.php?port={{a.port}}&pwd={{a.password}}">重置流量</a></span><br />
+                                            <span style="font-size: 0.9em;">清零时间 {{a.data.to | date : 'yyyy-MM-dd HH:mm'}}</span>
+                                    </div>
+                                </div>
+                            </md-list-item>
+                            <md-divider></md-divider>
+                            <!--md-list-item>
+                                <div flex layout="row" layout-align="space-between center">
+                                    <div flex="40">{{ '流量倍率：' | translate }}</div>
+                                    <div flex="60" style="text-align:right">{{ a.serverInfo.scale }}</div>
+                                </div>
+                            </md-list-item>
+                            <md-divider></md-divider>
+                            <md-list-item ng-style="cycleStyle(a)">
+                                <div flex layout="row" layout-align="space-between center">
+                                    <div flex="40">{{ '周期：' | translate }}</div>
+                                    <div flex="60" style="text-align:right">
+                                        <span ng-if="a.type === 1">{{ '无' | translate }}</span>
+                                        <span ng-if="a.type >=2 && a.type <= 5"><span style="font-size: 0.9em;">{{a.data.from | date : 'yyyy-MM-dd HH:mm'}}</span><br><span style="font-size: 0.9em;">{{a.data.to | date : 'yyyy-MM-dd HH:mm'}}</span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </md-list-item>
+                            <md-divider></md-divider-->
+                            <md-list-item>
+                                <div flex layout="row" layout-align="space-between center">
+                                    <div flex="40" translate>到期时间：</div>
+                                    <div flex="60" style="text-align:right">
+                                        <span ng-if="a.type === 1" translate>不限时</span>
+                                        <span ng-if="a.type >=2 && a.type <= 5">
+                                            <span style="font-size: 0.9em;">{{ a.data.expire | date : 'yyyy-MM-dd HH:mm' }}</span><br><span style="font-size: 0.9em;" ng-style="fontColor(a)"> {{ a.data.expire | timeago | translateTime }}</span><span ng-show="isAccountOutOfDate(a)" style="color: #a33;">&nbsp;{{ '已过期' | translate }}</span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </md-list-item>
+                            <md-divider></md-divider>
+                            <!--md-list-item>
+                                <div flex layout="row" layout-align="space-between center">
+                                    <div flex="40" translate>最近连接：</div>
+                                    <div flex="60" style="text-align:right">
+                                        <span ng-if="a.lastConnect" style="font-size: 0.9em;">{{a.lastConnect | date : 'yyyy-MM-dd HH:mm'}}<span><br><span ng-if="a.lastConnect" style="font-size: 0.9em;">{{ a.lastConnect | timeago | translateTime }}</span>
+                                    </div>
+                                </div>
+                            </md-list-item>
+                            <md-divider></md-divider-->
+                            <md-list-item>
+                                <div flex layout="row" layout-align="space-between center">
+                                    <div flex="40">混淆插件：</div>
+				    <div ng-if="a.serverInfo.comment != 'tls' && a.serverInfo.comment != 'http'" flex="60" style="text-align:right;">none</div>
+				    <div ng-if="a.serverInfo.comment == 'tls' || a.serverInfo.comment == 'http'" flex="60" style="text-align:right;font-size: 0.9em;">插件 <strong>obfs-local</strong><br />插件选项 <strong>obfs={{ a.serverInfo.comment }}</strong></div>
+                                </div>
+                            </md-list-item>
+                            <md-divider></md-divider >
+			    <div layout="column" hide-xs hide-sm>  <!--电脑显示-->
+                            <md-list-item ng-if=" os == 'linux'" >
+                                <div flex layout="row" layout-align="space-between center">
+                                    <div flex="40" style="font-size: 0.9em;" translate>Linux命令：</div>
+				    <div ng-if="a.serverInfo.comment != 'tls' && a.serverInfo.comment != 'http'" flex="60" style="text-align:right;"><button ngclipboard data-clipboard-text='ss-local -s {{a.serverInfo.host}} -p {{a.port}} -k {{a.password}} -m {{a.serverInfo.method}} -l 1080' ngclipboard-success="clipboardSuccess(e);">{{ "复制命令" }}</button></div>
+				    <div ng-if="a.serverInfo.comment == 'tls' || a.serverInfo.comment == 'http'" flex="60" style="text-align:right;"><button ngclipboard data-clipboard-text='ss-local -s {{a.serverInfo.host}} -p {{a.port}} -k {{a.password}} -m {{a.serverInfo.method}} -l 1080 --plugin obfs-local --plugin-opts "obfs={{ a.serverInfo.comment }};obfs-host=www.apple.com"' ngclipboard-success="clipboardSuccess(e);">{{ "复制命令" }}</button></div>
+                                </div>
+                            </md-list-item>
+                            <md-divider></md-divider>
+			    </div>
+                        </md-list>
+                    </div>
+                    <div flex flex-xs="100" layout="row" layout-align-xs="center center" layout-align-gt-xs="space-between center" ng-hide="config.simple" ng-if="a.defaultTab >= 0">
+                        <div hide-xs></div>
+                        <div ng-hide="isWG(a.serverInfo)" layout="column" layout-align-xs="center center" style="background-color: #eee;">
+                            <qr ng-if="a.serverInfo" ng-click="showQrcodeDialog(a.serverInfo, a)" size="getQrCodeSize()"
+                            layout-margin text="createQrCode(a.serverInfo, a)"
+                            image="true"></qr>
+                            <md-button class="md-primary" ngclipboard data-clipboard-text="{{ createQrCode(a.serverInfo, a) }}" ngclipboard-success="clipboardSuccess(e);">{{ '复制二维码链接' | translate }}</md-button>
+                        </div>
+                        <div ng-show="isWG(a.serverInfo)" ng-click="showWireGuard(a.serverInfo, a)" layout="column" layout-align-xs="center center" style="background-color: #eee;">
+                            <qr size="getQrCodeSize()" layout-margin text="createQrCode(a.serverInfo, a)" image="true"></qr>
+                            <md-button class="md-primary">显示WireGuard配置</md-button>
+                        </div>
+                        <div hide-xs></div>
+                    </div>
+                </div>
+                <!--md-button class="md-primary" ng-click="showChangePasswordDialog(a.id, a.password)">{{ '改SS密码' | translate }}</md-button>
+		<md-button class="md-primary">{{ '改SS密码' | translate }}</md-button-->
+                <md-button class="md-primary" ng-show="config.alipay || config.paypal || config.giftcard" ng-if="a.type >= 2 && a.type <= 5" ng-click="createOrder(a)">{{ '我要续费' | translate }}</md-button>
+                <md-button class="md-primary" ng-click="subscribe(a.id)" ng-if="config.subscribe">{{ '订阅链接' | translate }}</md-button>
+            </md-card-content>
+        </md-card>
+
+        <md-card ng-if="os == 'other'">
+	    <md-card-content>
+	    	<p>&nbsp;&nbsp;&nbsp;&nbsp;教程地址：<a href="https://www.wkao.in/#/home" target="_blank">www.wkao.in</a> [<a href="https://stuvn.github.io/link" target="_blank">备用</a>]</p>
+	    	<md-divider></md-divider>
+	    	<p>&nbsp;&nbsp;&nbsp;&nbsp;美区账号：<a href="https://www.wkao.in/#/ios" target="_blank">www.wkao.in/#/ios</a></p>
+	    </md-card-content>
+        </md-card>
+
+        <md-card ng-if="os == 'win'">
+	    <md-card-content>
+		<div><span><img src="libs/win/windows.png" /> Windows 教程 ↓ </span><span style="font-size:12px;color:gray;"> 所有教程 → <a href="https://www.wkao.in/#/home" target="_blank">wkao.in</a></span></div>
+	    	<p>一、点击下载 <a href="https://www.wkao.in/media/win/clash_cn.exe" target="_blank">Clash</a> 或 <a href="libs/win/clash.exe" target="_blank">备用下载</a> 安装后， 打开<font color=DarkRed>"Clash"</font>--><font color=DarkRed>"常规"</font>-->开启<font color=DarkRed>"系统代理"</font>/<font color=DarkRed>开机启动</font> [建议]</p>
+	    	<p><img width="720" src="libs/win/cfw_1.jpg" alt="" /></p>
+	    	<p>二、登入您购买<font color=DarkRed>"SS节点"</font>的网站-->进入<font color=DarkRed>"账号页面"</font>-->点击<font color=DarkRed>"订阅链接"</font>-->选择<font color=DarkRed>"clash"</font>--><font color=DarkRed>"复制链接"</font></p>
+	    	<p><img width="720" src="libs/win/cfw_2.jpg" alt="" /></p>
+	    	<p>三、打开<font color=DarkRed>"Clash"</font>--><font color=DarkRed>"配置"</font>-->复制的<font color=DarkRed>"订阅链接"</font>粘贴到<font color=gray>"从URL下载"</font>-->点击<font color=DarkRed>"下载"</font>-->选择<font color=DarkRed>"订阅文件"</font></p>
+	    	<p><img width="720" src="libs/win/cfw_3.jpg" alt="" /></p>
+	    	<p>四、打开<font color=DarkRed>"clash"</font>代理设置-->选择<font color=DarkRed>"规则"</font>模式--><font color=DarkRed>"选择节点"</font> [不建议选<font color=DarkRed>"自动选优"</font>，因为会<font color=DarkRed>"自动跳IP"</font>]</p>
+	    	<p><img width="720" src="libs/win/cfw_4.jpg" alt="" /></p>
+	    	<p class="tip"><font color=DarkRed>其他教程和常见问题: </font> <a href="https://www.wkao.in/#/win" target="_blank">www.wkao.in</a></p>
+	    </md-card-content>
+        </md-card>
+        <md-card ng-if="os == 'mac'">
+	    <md-card-content>
+		<div><span><img src="libs/mac/mac.png" /> macOS 教程 ↓ </span><span style="font-size:12px;color:gray;"> 所有教程 → <a href="https://www.wkao.in/#/home" target="_blank">wkao.in</a></span></div>
+	    	<p>一、点击下载 <a href="libs/mac/ClashX.dmg" target="_blank">ClashX</a> 或 <a href="https://install.appcenter.ms/users/clashx/apps/clashx-pro/distribution_groups/public" target="_blank">ClashX Pro</a> 后运行<font color=DarkRed>"ClashX.dmg"</font>，按提示完成安装 [<font color=DarkRed>"如提示权限，请授权"</font>]</p>
+	    	<p><img width="720" src="libs/mac/cx_1.jpg" alt="" /></p>
+	    	<p>二、登入网站的账号页面--><font color=DarkRed>点击"订阅链接"</font>--><font color=DarkRed>"clash"</font>--><font color=DarkRed>"导入App"</font>，在弹出的提示框-->点击<font color=DarkRed>"允许"</font></p>
+	    	<p><img width="720" src="libs/mac/cx_2.jpg" alt="" /></p>
+	    	<p>三、点击右上角的<font color=DarkRed>"ClashX"</font>，将出站模式设为<font color=DarkRed>"规则"</font>-->根据需要<font color=DarkRed>"选择节点"</font>-->勾选<font color=DarkRed>"设置为系统代理"</font></p>
+	    	<p><img width="720" src="libs/mac/cx_4.jpg" alt="" /></p>
+	    	<p class="tip"><font color=DarkRed>其他教程和常见问题: </font> <a href="https://www.wkao.in/#/mac" target="_blank">www.wkao.in</a></p>
+	    </md-card-content>
+        </md-card>
+        <md-card ng-if="os == 'linux'">
+	    <md-card-content>
+		<div><span><img src="libs/linux/linux.png" /> Linux 教程 ↓ </span><span style="font-size:12px;color:gray;"> 所有教程 → <a href="https://www.wkao.in/#/home" target="_blank">wkao.in</a></span></div>
+	    	<p>一、打开<font color=DarkRed>"终端"</font>，在<font color=DarkRed>"终端"</font>里执行下面的命令！完成后会自动打开<font color=DarkRed>"Clash"</font>的常规设置-->打开<font color=DarkRed>"开机启动"</font></p>
+	    	<code>wget https://www.wkao.in/bash/clash.sh && bash clash.sh</code>
+	    	<p><img width="720" src="libs/linux/cfw_1.jpg" alt="" /></p>
+	    	<p>二、登入您购买<font color=DarkRed>"SS节点"</font>的网站-->进入<font color=DarkRed>"账号页面"</font>-->点击<font color=DarkRed>"订阅链接"</font>-->选择<font color=DarkRed>"clash"</font>-->点击<font color=DarkRed>"复制链接"</font></p>
+	    	<p><img width="720" src="libs/win/cfw_2.jpg" alt="" /></p>
+	    	<p>三、打开<font color=DarkRed>"Clash"</font>--><font color=DarkRed>"配置"</font>-->把复制的<font color=DarkRed>"订阅链接"</font>粘贴到<font color=gray>"从URL下载"</font>-->点击<font color=DarkRed>"下载"</font>-->选择<font color=DarkRed>"订阅文件"</font></p>
+	    	<p><img width="720" src="libs/win/cfw_3.jpg" alt="" /></p>
+	    	<p>四、打开<font color=DarkRed>"clash"</font>的代理设置-->选择<font color=DarkRed>"规则"</font>--><font color=DarkRed>"选择节点"</font> [<font color=DarkRed>"首次安装"</font>的新用户，<font color=DarkRed>"需重启系统"</font>才能使用]</p>
+	    	<p><img width="720" src="libs/linux/cfw_4.jpg" alt="" /></p>
+	    	<p class="tip">弃用或退出<font color=DarkRed>"clash"</font>后无法上网？可在<font color=DarkRed>"终端"</font>里执行下面的命令，<font color=DarkRed>"解除代理"</font>绑定！[<font color=DarkRed>"重启生效"</font>]</p>
+	    	<code>sed -i "s/^export http.*//g" ~/.profile</code>
+	    	<p class="tip"><font color=DarkRed>其他教程和常见问题: </font> <a href="https://www.wkao.in/#/linux" target="_blank">www.wkao.in</a></p>
+	    </md-card-content>
+        </md-card>
+
+	<p ng-if="os == 'ios'" style="color: red;">&nbsp;&nbsp;<font color=Red>请用内置的"Safari"或"Chrome/Firefox"浏览器</a></p>
+	<p ng-if="os == 'android'" style="color: red;">&nbsp;&nbsp;<font color=Red>请用"Chrome"、"Firefox"或系统内置的浏览器！</a></p>
+
+        <md-card ng-if="os == 'ios'">
+            <md-card-content>
+		<div><span><img src="libs/apple/apple.png" /> iPhone/iPad 教程 ↓ </span><span style="font-size:12px;color:gray;"> 所有教程 → <a href="https://www.wkao.in/#/home" target="_blank">wkao.in</a></span></div>
+	    	<p><font size=4>ⓘ</font> 打开<font color=DarkRed>'App Store'</font>--><font color=DarkRed>'右上角头像'</font>--><font color=DarkRed>下拉到底部</font>--><font color=DarkRed>退出登录</font>，再登录<font color=DarkRed>'美区账号'</font> [在图下方]</p>
+	    	<p><font size=4>ⓘ</font> 登陆时如有安全提示--><font color=DarkRed>'其他选项'</font>--><font color=DarkRed>'不升级'</font></p>						
+	    	<p><img width="320" src="libs/apple/id.jpg" alt="" /></p>
+		<p><a href="javascript:getid(0);">点击查看美区账号</a> &nbsp;&nbsp;&nbsp;&nbsp; <a href="javascript:getid(1);">点击查看备用账号</a></p>
+	    	<div style="color:Blue" id="jsonTip"></div>
+		<p><font size=4>ⓘ</font> 登录美区账号后，点击下载 <a href="https://apps.apple.com/us/app/shadowrocket/id932747118" target="_blank">Shadowrocket</a></p>
+	    	<p class="tip">下载完App后，请退出<font color=DarkRed>'美区账号'</font>，以避免各种<font color=DarkRed>'潜在的安全问题'</font></p>
+	    	<p class="tip">如提示<font color=DarkRed>'帐户已在 App Store 被禁用'</font>，请先删掉旧版<font color=DarkRed>'Shadowrocket'</font></p>
+	    	<p>一、<font color=DarkRed>订阅链接</font>--><font color=DarkRed>shadowrocket</font>--><font color=DarkRed>导入App</font></p>
+	    	<p><img width="320" src="libs/apple/sub_1.jpg" alt="" /></p>
+	    	<p>二、打开<font color=DarkRed>'小火箭'</font>--><font color=DarkRed>选择节点</font>--><font color=DarkRed>'连接/断开'</font></p>
+	    	<p><img width="320" src="libs/apple/sub_2.jpg" alt="" /></p>
+		<p>如无法导入，请复制订阅连接-->打开<font color=DarkRed>小火箭</font>--><font color=DarkRed>右上角'+'</font>-->类型: <font color=DarkRed>Subscribe</font>--><font color=DarkRed>URL</font>--><font color=DarkRed>保存</font></p>
+	    	<p class="tip"><font color=DarkRed>其他教程和常见问题: </font> <a href="https://www.wkao.in/#/ios" target="_blank">www.wkao.in</a></p>
+            </md-card-content>
+        </md-card>
+        <md-card ng-if="os == 'android'">
+            <md-card-content>  
+		<div><span><img src="libs/android/android.png" /> Android 教程 ↓ </span><span style="font-size:12px;color:gray;"> 所有教程 → <a href="https://www.wkao.in/#/home" target="_blank">wkao.in</a></span></div>
+	    	<p><font size=4>ⓘ</font> 点击下载 <a href="libs/android/sb.apk" target="_blank">Surfboard</a> 或 <a href="libs/android/cfa.apk" target="_blank">Clash</a> [<font color=DarkRed>二选一</font>]</p>
+	    	<p><font size=4>ⓘ</font> 安装后，请为App设置<font color=DarkRed>"后台运行"</font>权限！</p>
+	    	<p>一、点击<font color=DarkRed>订阅链接</font>--><font color=DarkRed>surfboard</font>--><font color=DarkRed>导入App</font></p>
+	    	<p><img width="320" src="libs/android/sub_1.jpg" alt="" /></p>
+	    	<p>二、打开App--><font color=DarkRed>点击代理<strong>⊙</strong></font>--><font color=DarkRed>选择节点！</font></p>
+	    	<p><img width="320" src="libs/android/sub_2.jpg" alt="" /></p>
+	    	<p>三、点开<font color=DarkRed>"仪表盘"</font>--><font color=DarkRed>再点▶</font>--><font color=DarkRed>"连接/断开"</font></p>
+	    	<p><img width="320" src="libs/android/sub_3.jpg" alt="" /></p>
+	    	<p class="tip"><font color=DarkRed>其他教程和常见问题: </font> <a href="https://www.wkao.in/#/android" target="_blank">www.wkao.in</a></p>
+            </md-card-content>
+        </md-card>
+
+    </div>
+</div>
